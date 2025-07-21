@@ -95,7 +95,7 @@ try:
         palavra_chave = row.get("Palavra-chave", "").strip()
         filtro = df_recebidos[
             df_recebidos["Remetente"].str.contains(esperado_remetente, case=False, na=False) &
-            df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False)
+            df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False, regex=False)
         ]
         resultado.append({
             "Remetente Esperado": esperado_remetente,
