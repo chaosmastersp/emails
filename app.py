@@ -68,7 +68,7 @@ try:
         status, dados = mail.fetch(num, '(RFC822)')
         raw_email = dados[0][1]
         msg = email.message_from_bytes(raw_email)
-        remetente = parseaddr(msg["From"])[1]  # Extrai apenas o e-mail limpo
+        remetente = msg["From"]  # Extrai apenas o e-mail limpo
         assunto = decodificar_assunto(msg["Subject"])
         recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
@@ -114,3 +114,4 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
+
