@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import imaplib
 import email
+from email.utils import parseaddr
+from email.header import decode_header
 from datetime import datetime, timedelta
 import ssl
 import io
@@ -20,6 +22,19 @@ def autenticar():
         return False
     else:
         return False
+
+# Função para decodificar o campo Assunto
+def decodificar_assunto(raw_subject):
+    if raw_subject is None:
+        return ""
+    decoded_parts = decode_header(raw_subject)
+    subject = ""
+    for part, encoding in decoded_parts:
+        if isinstance(part, bytes):
+            subject += part.decode(encoding or "utf-8", errors="ignore")
+        else:
+            subject += part
+    return subject.strip()
 
 # Bloqueia acesso até autenticar
 if not autenticar():
@@ -53,8 +68,8 @@ try:
         status, dados = mail.fetch(num, '(RFC822)')
         raw_email = dados[0][1]
         msg = email.message_from_bytes(raw_email)
-        remetente = msg["From"]
-        assunto = msg["Subject"]
+        remetente = parseaddr(msg["From"])[1]  # Extrai apenas o e-mail limpo
+        assunto = decodificar_assunto(msg["Subject"])
         recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
     df_recebidos = pd.DataFrame(recebidos)
@@ -92,4 +107,3 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
-
