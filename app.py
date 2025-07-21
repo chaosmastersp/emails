@@ -90,8 +90,9 @@ try:
     # Verificação de recebimento esperado
     resultado = []
     for _, row in df_esperados.iterrows():
-        esperado_remetente = row["Remetente"]
-        palavra_chave = row["Palavra-chave"]
+        row = row.rename(lambda x: x.strip()) if isinstance(row, pd.Series) else row
+        esperado_remetente = row.get("Remetente", "").strip()
+        palavra_chave = row.get("Palavra-chave", "").strip()
         filtro = df_recebidos[
             df_recebidos["Remetente"].str.contains(esperado_remetente, case=False, na=False) &
             df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False)
@@ -115,3 +116,4 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
+
