@@ -59,8 +59,8 @@ try:
 
     df_recebidos = pd.DataFrame(recebidos)
 
-    # Resumo por remetente
-    resumo = df_recebidos.groupby(["Remetente", "Assunto"]).size().reset_index(name="Quantidade")
+    # Resumo por remetente (sem detalhar por assunto)
+    resumo = df_recebidos.groupby("Remetente").size().reset_index(name="Quantidade")
     st.subheader("📊 Resumo de E-mails Recebidos")
     st.dataframe(resumo, use_container_width=True)
 
@@ -92,3 +92,4 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
+
