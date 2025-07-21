@@ -72,7 +72,10 @@ try:
         assunto = decodificar_assunto(msg["Subject"])
         recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
-    df_recebidos = pd.DataFrame(recebidos)
+    if recebidos:
+        df_recebidos = pd.DataFrame(recebidos)
+    else:
+        df_recebidos = pd.DataFrame(columns=["Remetente", "Assunto"])
 
     if not df_recebidos.empty:
         # Resumo por remetente (sem detalhar por assunto)
