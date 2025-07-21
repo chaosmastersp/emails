@@ -8,6 +8,23 @@ import io
 
 st.set_page_config(page_title="Verificador de E-mails", layout="wide")
 
+# Função de autenticação
+def autenticar():
+    st.sidebar.title("🔐 Acesso Restrito")
+    usuario = st.sidebar.text_input("Usuário")
+    senha = st.sidebar.text_input("Senha", type="password")
+    if usuario == st.secrets["auth_user"] and senha == st.secrets["auth_pass"]:
+        return True
+    elif usuario and senha:
+        st.sidebar.error("Credenciais inválidas.")
+        return False
+    else:
+        return False
+
+# Bloqueia acesso até autenticar
+if not autenticar():
+    st.stop()
+
 st.title("📬 Verificador de E-mails Recebidos (Dia Anterior)")
 
 # Carrega a planilha fixa com os e-mails esperados
