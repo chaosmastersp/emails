@@ -95,4 +95,19 @@ try:
         resultado.append({
             "Remetente Esperado": esperado_remetente,
             "Palavra-chave": palavra_chave,
-            "Recebido On
+            "Recebido Ontem": "✅ Sim" if not filtro.empty else "❌ Não"
+        })
+
+    df_resultado = pd.DataFrame(resultado)
+    st.subheader("📥 Status dos E-mails Esperados")
+    st.dataframe(df_resultado, use_container_width=True)
+
+    # Exportação do resultado
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df_resultado.to_excel(writer, sheet_name='Status', index=False)
+        resumo.to_excel(writer, sheet_name='Resumo', index=False)
+    st.download_button("📁 Baixar Resultado em Excel", data=buffer.getvalue(), file_name="resultado_emails.xlsx")
+
+except Exception as e:
+    st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
