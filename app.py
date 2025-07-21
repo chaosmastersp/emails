@@ -44,6 +44,7 @@ st.title("📬 Verificador de E-mails Recebidos (Dia Anterior)")
 
 # Carrega a planilha fixa com os e-mails esperados
 df_esperados = pd.read_excel("emails_esperados.xlsx")
+df_esperados.columns = df_esperados.columns.str.strip()
 
 # Lê as credenciais seguras do secrets.toml
 email_user = st.secrets["email_user"]
@@ -114,4 +115,3 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
-
