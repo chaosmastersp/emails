@@ -96,6 +96,11 @@ if aba == "Verificação de E-mails":
             palavra_chave = str(row["Palavra-chave"]) if pd.notna(row["Palavra-chave"]) else ""
             palavra_chave = palavra_chave.strip()
 
+            if "Remetente" not in df_recebidos.columns:
+                df_recebidos["Remetente"] = ""
+            if "Assunto" not in df_recebidos.columns:
+                df_recebidos["Assunto"] = ""
+
             filtro = df_recebidos[
                 df_recebidos["Remetente"].str.contains(esperado_remetente, case=False, na=False) &
                 df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False, regex=False)
