@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import imaplib
 import email
-from email.utils import parseaddr
 from email.header import decode_header
 from datetime import datetime, timedelta
 import ssl
@@ -11,18 +10,33 @@ import os
 
 st.set_page_config(page_title="Verificador de E-mails", layout="wide")
 
-def autenticar():
+# Autenticação com ocultação após login
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+
+if not st.session_state.autenticado:
     st.sidebar.title("🔐 Acesso Restrito")
     usuario = st.sidebar.text_input("Usuário")
     senha = st.sidebar.text_input("Senha", type="password")
-    if usuario == st.secrets["auth_user"] and senha == st.secrets["auth_pass"]:
-        return True
-    elif usuario and senha:
-        st.sidebar.error("Credenciais inválidas.")
-        return False
-    else:
-        return False
+    if st.sidebar.button("Entrar"):
+        if usuario == st.secrets["auth_user"] and senha == st.secrets["auth_pass"]:
+            st.session_state.autenticado = True
+            st.experimental_rerun()
+        else:
+            st.sidebar.error("Credenciais inválidas.")
+else:
+    st.sidebar.success("✅ Acesso autorizado")
 
+if not st.session_state.autenticado:
+    st.stop()
+
+# Inicializa session state
+if "resultado_nao" not in st.session_state:
+    st.session_state["resultado_nao"] = pd.DataFrame()
+
+aba = st.sidebar.selectbox("📌 Menu", ["Verificação de E-mails", "Registro de Ausências"])
+
+# Decodifica assunto de e-mail
 def decodificar_assunto(raw_subject):
     if raw_subject is None:
         return ""
@@ -34,14 +48,6 @@ def decodificar_assunto(raw_subject):
         else:
             subject += part
     return subject.strip()
-
-if not autenticar():
-    st.stop()
-
-if "resultado_nao" not in st.session_state:
-    st.session_state["resultado_nao"] = pd.DataFrame()
-
-aba = st.sidebar.selectbox("📌 Menu", ["Verificação de E-mails", "Registro de Ausências"])
 
 if aba == "Verificação de E-mails":
     st.title("📬 Verificador de E-mails Recebidos")
@@ -88,12 +94,16 @@ if aba == "Verificação de E-mails":
 
         resultado = []
         for _, row in df_esperados.iterrows():
-            esperado_remetente = str(row["Remetente"]).strip()
-            palavra_chave = str(row["Palavra-chave"]).strip()
+            esperado_remetente = str(row["Remetente"]) if pd.notna(row["Remetente"]) else ""
+            esperado_remetente = esperado_remetente.strip()
+            palavra_chave = str(row["Palavra-chave"]) if pd.notna(row["Palavra-chave"]) else ""
+            palavra_chave = palavra_chave.strip()
+
             filtro = df_recebidos[
                 df_recebidos["Remetente"].str.contains(esperado_remetente, case=False, na=False) &
                 df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False, regex=False)
             ]
+
             resultado.append({
                 "Remetente Esperado": esperado_remetente,
                 "Palavra-chave": palavra_chave,
