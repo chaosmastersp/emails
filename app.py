@@ -11,7 +11,6 @@ import os
 
 st.set_page_config(page_title="Verificador de E-mails", layout="wide")
 
-# Função de autenticação
 def autenticar():
     st.sidebar.title("🔐 Acesso Restrito")
     usuario = st.sidebar.text_input("Usuário")
@@ -24,7 +23,6 @@ def autenticar():
     else:
         return False
 
-# Função para decodificar o campo Assunto
 def decodificar_assunto(raw_subject):
     if raw_subject is None:
         return ""
@@ -37,19 +35,20 @@ def decodificar_assunto(raw_subject):
             subject += part
     return subject.strip()
 
-# Bloqueia acesso até autenticar
 if not autenticar():
     st.stop()
 
-# Inicializa session state para armazenar os ❌ Não
 if "resultado_nao" not in st.session_state:
     st.session_state["resultado_nao"] = pd.DataFrame()
 
-# Menu lateral
 aba = st.sidebar.selectbox("📌 Menu", ["Verificação de E-mails", "Registro de Ausências"])
 
 if aba == "Verificação de E-mails":
-    st.title("📬 Verificador de E-mails Recebidos (Dia Anterior)")
+    st.title("📬 Verificador de E-mails Recebidos")
+
+    data_ref_verificacao = st.date_input("Selecionar data de verificação", value=datetime.now() - timedelta(days=1))
+    data_ref_format_imap = data_ref_verificacao.strftime("%d-%b-%Y")
+    nome_arquivo = f"registros_nao/{data_ref_verificacao.strftime('%Y-%m-%d')}.csv"
 
     df_esperados = pd.read_excel("emails_esperados.xlsx")
     df_esperados.columns = df_esperados.columns.str.strip()
@@ -65,8 +64,7 @@ if aba == "Verificação de E-mails":
         mail.login(email_user, email_pass)
         mail.select("inbox")
 
-        ontem = (datetime.now() - timedelta(days=1)).strftime("%d-%b-%Y")
-        status, dados = mail.search(None, f'(ON "{ontem}")')
+        status, dados = mail.search(None, f'(ON "{data_ref_format_imap}")')
         ids = dados[0].split()
 
         recebidos = []
@@ -86,7 +84,7 @@ if aba == "Verificação de E-mails":
             st.dataframe(resumo, use_container_width=True)
         else:
             resumo = pd.DataFrame(columns=["Remetente", "Quantidade"])
-            st.warning("Nenhum e-mail encontrado na data de ontem.")
+            st.warning("Nenhum e-mail encontrado na data selecionada.")
 
         resultado = []
         for _, row in df_esperados.iterrows():
@@ -106,8 +104,17 @@ if aba == "Verificação de E-mails":
         st.subheader("📥 Status dos E-mails Esperados")
         st.dataframe(df_resultado, use_container_width=True)
 
-        # Armazena os ❌ Não
-        st.session_state["resultado_nao"] = df_resultado[df_resultado["Recebido Ontem"] == "❌ Não"][["Remetente Esperado", "Palavra-chave"]]
+        df_nao = df_resultado[df_resultado["Recebido Ontem"] == "❌ Não"][["Remetente Esperado", "Palavra-chave"]]
+        st.session_state["resultado_nao"] = df_nao
+
+        if st.button("💾 Salvar '❌ Não' para esta data"):
+            if not os.path.exists("registros_nao"):
+                os.makedirs("registros_nao")
+            if not df_nao.empty:
+                df_nao.to_csv(nome_arquivo, index=False)
+                st.success(f"Registros salvos para {data_ref_verificacao.strftime('%d/%m/%Y')}")
+            else:
+                st.warning("Nenhum registro ❌ Não encontrado para salvar.")
 
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
