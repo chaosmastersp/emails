@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import imaplib
@@ -10,7 +11,6 @@ import os
 
 st.set_page_config(page_title="Verificador de E-mails", layout="wide")
 
-# Autenticação com campos ocultos após login
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
@@ -29,13 +29,11 @@ else:
 if not st.session_state.autenticado:
     st.stop()
 
-# Inicializa session state
 if "resultado_nao" not in st.session_state:
     st.session_state["resultado_nao"] = pd.DataFrame()
 
 aba = st.sidebar.selectbox("📌 Menu", ["Verificação de E-mails", "Registro de Ausências"])
 
-# Decodifica assunto de e-mail
 def decodificar_assunto(raw_subject):
     if raw_subject is None:
         return ""
@@ -77,19 +75,19 @@ if aba == "Verificação de E-mails":
             status, dados = mail.fetch(num, '(RFC822)')
             raw_email = dados[0][1]
             msg = email.message_from_bytes(raw_email)
-            remetente = msg["From"]
+            remetente = msg["From"] if msg["From"] else "Desconhecido"
             assunto = decodificar_assunto(msg["Subject"])
             recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
         df_recebidos = pd.DataFrame(recebidos) if recebidos else pd.DataFrame(columns=["Remetente", "Assunto"])
 
-        if not df_recebidos.empty:
+        if "Remetente" in df_recebidos.columns and not df_recebidos.empty:
             resumo = df_recebidos.groupby("Remetente").size().reset_index(name="Quantidade")
             st.subheader("📊 Resumo de E-mails Recebidos")
             st.dataframe(resumo, use_container_width=True)
         else:
             resumo = pd.DataFrame(columns=["Remetente", "Quantidade"])
-            st.warning("Nenhum e-mail encontrado na data selecionada.")
+            st.warning("Nenhum e-mail encontrado ou erro ao processar remetentes.")
 
         resultado = []
         for _, row in df_esperados.iterrows():
