@@ -1,9 +1,9 @@
-
 import streamlit as st
 import pandas as pd
 import imaplib
 import email
 from email.header import decode_header
+from email.utils import parseaddr
 from datetime import datetime, timedelta
 import ssl
 import io
@@ -75,7 +75,7 @@ if aba == "Verificação de E-mails":
             status, dados = mail.fetch(num, '(RFC822)')
             raw_email = dados[0][1]
             msg = email.message_from_bytes(raw_email)
-            remetente = msg["From"] if msg["From"] else "Desconhecido"
+            remetente = parseaddr(msg["From"])[1] if msg["From"] else "Desconhecido"
             assunto = decodificar_assunto(msg["Subject"])
             recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
