@@ -41,21 +41,19 @@ def decodificar_assunto(raw_subject):
 if not autenticar():
     st.stop()
 
+# Inicializa session state para armazenar os ❌ Não
+if "resultado_nao" not in st.session_state:
+    st.session_state["resultado_nao"] = pd.DataFrame()
+
 # Menu lateral
 aba = st.sidebar.selectbox("📌 Menu", ["Verificação de E-mails", "Registro de Ausências"])
 
-# Variável global usada para exportar '❌ Não'
-df_resultado = pd.DataFrame()
-
-# Aba principal de verificação
 if aba == "Verificação de E-mails":
     st.title("📬 Verificador de E-mails Recebidos (Dia Anterior)")
 
-    # Carrega a planilha fixa com os e-mails esperados
     df_esperados = pd.read_excel("emails_esperados.xlsx")
     df_esperados.columns = df_esperados.columns.str.strip()
 
-    # Lê as credenciais seguras do secrets.toml
     email_user = st.secrets["email_user"]
     email_pass = st.secrets["email_pass"]
     imap_server = st.secrets["imap_server"]
@@ -67,7 +65,6 @@ if aba == "Verificação de E-mails":
         mail.login(email_user, email_pass)
         mail.select("inbox")
 
-        # Data de ontem no formato IMAP
         ontem = (datetime.now() - timedelta(days=1)).strftime("%d-%b-%Y")
         status, dados = mail.search(None, f'(ON "{ontem}")')
         ids = dados[0].split()
@@ -81,10 +78,7 @@ if aba == "Verificação de E-mails":
             assunto = decodificar_assunto(msg["Subject"])
             recebidos.append({"Remetente": remetente, "Assunto": assunto})
 
-        if recebidos:
-            df_recebidos = pd.DataFrame(recebidos)
-        else:
-            df_recebidos = pd.DataFrame(columns=["Remetente", "Assunto"])
+        df_recebidos = pd.DataFrame(recebidos) if recebidos else pd.DataFrame(columns=["Remetente", "Assunto"])
 
         if not df_recebidos.empty:
             resumo = df_recebidos.groupby("Remetente").size().reset_index(name="Quantidade")
@@ -94,7 +88,6 @@ if aba == "Verificação de E-mails":
             resumo = pd.DataFrame(columns=["Remetente", "Quantidade"])
             st.warning("Nenhum e-mail encontrado na data de ontem.")
 
-        # Verificação de recebimento esperado
         resultado = []
         for _, row in df_esperados.iterrows():
             esperado_remetente = row.get("Remetente", "").strip()
@@ -113,6 +106,9 @@ if aba == "Verificação de E-mails":
         st.subheader("📥 Status dos E-mails Esperados")
         st.dataframe(df_resultado, use_container_width=True)
 
+        # Armazena os ❌ Não
+        st.session_state["resultado_nao"] = df_resultado[df_resultado["Recebido Ontem"] == "❌ Não"][["Remetente Esperado", "Palavra-chave"]]
+
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_resultado.to_excel(writer, sheet_name='Status', index=False)
@@ -122,10 +118,8 @@ if aba == "Verificação de E-mails":
     except Exception as e:
         st.error(f"Erro ao conectar ou processar e-mails: {str(e)}")
 
-# Aba de registros '❌ Não'
 elif aba == "Registro de Ausências":
     st.title("📅 Registro de Ausências (❌ Não)")
-
     data_ref = st.date_input("Selecionar data de referência", value=datetime(2025, 7, 21))
     nome_arquivo = f"registros_nao/{data_ref.strftime('%Y-%m-%d')}.csv"
 
@@ -142,9 +136,9 @@ elif aba == "Registro de Ausências":
         st.dataframe(df_nao, use_container_width=True)
 
     if st.button("📤 Salvar '❌ Não' do último resultado"):
-        if not df_resultado.empty:
+        df_nao_salvar = st.session_state.get("resultado_nao", pd.DataFrame())
+        if not df_nao_salvar.empty:
             try:
-                df_nao_salvar = df_resultado[df_resultado["Recebido Ontem"] == "❌ Não"][["Remetente Esperado", "Palavra-chave"]]
                 df_nao_salvar.to_csv(nome_arquivo, index=False)
                 st.success(f"Ausências salvas para {data_ref.strftime('%d/%m/%Y')}.")
             except Exception as e:
