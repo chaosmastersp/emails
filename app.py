@@ -10,7 +10,7 @@ import os
 
 st.set_page_config(page_title="Verificador de E-mails", layout="wide")
 
-# Autenticação com ocultação após login
+# Autenticação com campos ocultos após login
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
@@ -21,7 +21,6 @@ if not st.session_state.autenticado:
     if st.sidebar.button("Entrar"):
         if usuario == st.secrets["auth_user"] and senha == st.secrets["auth_pass"]:
             st.session_state.autenticado = True
-            st.experimental_rerun()
         else:
             st.sidebar.error("Credenciais inválidas.")
 else:
