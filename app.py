@@ -88,8 +88,8 @@ if aba == "Verificação de E-mails":
 
         resultado = []
         for _, row in df_esperados.iterrows():
-            esperado_remetente = row.get("Remetente", "").strip()
-            palavra_chave = row.get("Palavra-chave", "").strip()
+            esperado_remetente = str(row["Remetente"]).strip()
+            palavra_chave = str(row["Palavra-chave"]).strip()
             filtro = df_recebidos[
                 df_recebidos["Remetente"].str.contains(esperado_remetente, case=False, na=False) &
                 df_recebidos["Assunto"].str.contains(palavra_chave, case=False, na=False, regex=False)
@@ -141,14 +141,3 @@ elif aba == "Registro de Ausências":
             df_nao = pd.DataFrame(columns=["Remetente Esperado", "Palavra-chave"])
             st.warning("Nenhum registro encontrado para esta data.")
         st.dataframe(df_nao, use_container_width=True)
-
-    if st.button("📤 Salvar '❌ Não' do último resultado"):
-        df_nao_salvar = st.session_state.get("resultado_nao", pd.DataFrame())
-        if not df_nao_salvar.empty:
-            try:
-                df_nao_salvar.to_csv(nome_arquivo, index=False)
-                st.success(f"Ausências salvas para {data_ref.strftime('%d/%m/%Y')}.")
-            except Exception as e:
-                st.error(f"Erro ao salvar ausências: {str(e)}")
-        else:
-            st.warning("Nenhum resultado disponível para salvar.")
