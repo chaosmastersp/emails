@@ -81,7 +81,10 @@ if aba == "Verificação de E-mails":
 
         df_recebidos = pd.DataFrame(recebidos) if recebidos else pd.DataFrame(columns=["Remetente", "Assunto"])
 
-        if "Remetente" in df_recebidos.columns and not df_recebidos.empty:
+        # Correção: garantir que a coluna Remetente existe
+        if not df_recebidos.empty:
+            if "Remetente" not in df_recebidos.columns:
+                df_recebidos["Remetente"] = ""
             resumo = df_recebidos.groupby("Remetente").size().reset_index(name="Quantidade")
             st.subheader("📊 Resumo de E-mails Recebidos")
             st.dataframe(resumo, use_container_width=True)
